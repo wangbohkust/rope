@@ -9,34 +9,70 @@
 import SpriteKit
 
 class GameScene: SKScene {
+    // two ends of rope
+    var player : SKSpriteNode
+    var anchor : SKSpriteNode
+    
+    required init?(coder aDecoder: NSCoder)  {
+        player = SKSpriteNode()
+        anchor = SKSpriteNode()
+        
+        super.init(coder: aDecoder)
+    }
+    
     override func didMoveToView(view: SKView) {
         /* Setup your scene here */
-        let myLabel = SKLabelNode(fontNamed:"Chalkduster")
-        myLabel.text = "Hello, World!";
-        myLabel.fontSize = 65;
-        myLabel.position = CGPoint(x:CGRectGetMidX(self.frame), y:CGRectGetMidY(self.frame));
+        // 1.set border
+        self.physicsBody = SKPhysicsBody(edgeLoopFromRect: self.frame)
         
-        self.addChild(myLabel)
+        //2.set end rope node
+        self.anchor = SKSpriteNode(color: UIColor.blackColor(), size: CGSize(width: 30, height: 30))
+        self.anchor.position = CGPoint(x: self.frame.size.width / 2, y: self.frame.size.height - anchor.size.height)
+        self.anchor.physicsBody = SKPhysicsBody(rectangleOfSize: anchor.frame.size)
+        self.anchor.physicsBody?.dynamic = false
+        self.anchor.physicsBody?.collisionBitMask = 1
+        self.anchor.physicsBody?.categoryBitMask = 1
+        self.anchor.physicsBody?.contactTestBitMask = 1
+        self.addChild(self.anchor)
+        
+        //3.set start rope node
+        self.player = SKSpriteNode(color: UIColor.blackColor(), size: CGSize(width: 50, height: 50))
+        self.player.position = CGPoint(x: self.frame.size.width / 2, y: self.frame.size.height / 2)
+        self.player.physicsBody = SKPhysicsBody(rectangleOfSize: player.frame.size)
+        self.player.physicsBody?.collisionBitMask = 1
+        self.player.physicsBody?.categoryBitMask = 1
+        self.player.physicsBody?.contactTestBitMask = 1
+        self.addChild(self.player)
+        
+        //4.set Rope
+        var rope = Rope(parentScene: self, node: self.player, node: self.anchor)
+        
+        //5.set label
+        var label = SKLabelNode(text: "Tap on screen to move block")
+        label.fontColor = UIColor.blackColor()
+        label.position = CGPoint(x: self.frame.size.width / 2, y: 200)
+        self.addChild(label)
     }
     
     override func touchesBegan(touches: NSSet, withEvent event: UIEvent) {
         /* Called when a touch begins */
-        
         for touch: AnyObject in touches {
-            let location = touch.locationInNode(self)
+            var location = touch.locationInNode(self)
             
-            let sprite = SKSpriteNode(imageNamed:"Spaceship")
+            // 1. remove previous rope nodes
+            self.enumerateChildNodesWithName("rope", usingBlock: { node, stop in
+                node.removeFromParent()
+            })
             
-            sprite.xScale = 0.5
-            sprite.yScale = 0.5
-            sprite.position = location
+            // 2. set new end point
+            self.player.position = location
+            self.player.zRotation = 0.0
+            self.player.physicsBody?.velocity = CGVectorMake(0.0, 0.0);
             
-            let action = SKAction.rotateByAngle(CGFloat(M_PI), duration:1)
-            
-            sprite.runAction(SKAction.repeatActionForever(action))
-            
-            self.addChild(sprite)
+            // 3.set new rope
+            var rope = Rope(parentScene: self, node: self.player, node: self.anchor)
         }
+        
     }
    
     override func update(currentTime: CFTimeInterval) {
